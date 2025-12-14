@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech Translator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-primary: #f5f3f0;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #fafaf8;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --accent: #000000;
+            --accent-hover: #333333;
+            --border: #e0e0e0;
+            --shadow: rgba(0, 0, 0, 0.08);
+            --shadow-lg: rgba(0, 0, 0, 0.12);
+        }
+
+        .dark {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #242424;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #e5e5e5;
+            --text-secondary: #9a9a9a;
+            --text-muted: #6b6b6b;
+            --accent: #ffffff;
+            --accent-hover: #e5e5e5;
+            --border: #3a3a3a;
+            --shadow: rgba(0, 0, 0, 0.2);
+            --shadow-lg: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-secondary);
+            border-radius: 32px;
+            box-shadow: 0 8px 32px var(--shadow-lg);
+            padding: 0;
+            overflow: hidden;
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes recordingPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 0 20px rgba(0, 0, 0, 0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+            text-align: center;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+
+        .content {
+            padding: 24px;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 24px;
+            border: 1.5px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .mode-tab:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .mode-tab.active {
+            background: var(--accent);
+            color: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        .mode-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .language-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-tertiary);
+            padding: 12px 16px;
+            border-radius: 28px;
+            margin-bottom: 20px;
+            border: 1.5px solid var(--border);
+        }
+
+        .lang-dropdown {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .lang-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        select {
+            flex: 1;
+            background: transparent;
+            border: none;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            appearance: none;
+            padding-right: 20px;
+        }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .dropdown-arrow {
+            position: absolute;
+            right: 0;
+            pointer-events: none;
+            color: var(--text-secondary);
+        }
+
+        .swap-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: 1.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+
+        .swap-btn:hover {
+            transform: rotate(180deg);
+            background: var(--bg-tertiary);
+        }
+
+        .text-area-container {
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            border: 1.5px solid var(--border);
+            padding: 20px;
+            position: relative;
+            min-height: 420px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .text-area-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .text-area-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .action-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .action-btn.playing {
+            color: #4285f4;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        textarea {
+            width: 100%;
+            flex: 1;
+            background: transparent;
+            border: none;
+            resize: none;
+            font-size: 16px;
+            color: var(--text-primary);
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .text-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .mic-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 32px;
+            padding-bottom: 8px;
+        }
+
+        .mic-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 16px var(--shadow-lg);
+            color: var(--bg-secondary);
+            position: relative;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 24px var(--shadow-lg);
+        }
+
+        .mic-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mic-btn.recording {
+            background: var(--accent);
+            animation: recordingPulse 1.5s ease-in-out infinite;
+        }
+
+        .mic-btn svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .status-text {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            min-height: 20px;
+            font-weight: 500;
+        }
+
+        .status-text.recording {
+            color: var(--accent);
+        }
+
+        .status-text.translating {
+            color: #4285f4;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px var(--shadow-lg);
+            animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-content p {
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-secondary);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .translation-output {
+            display: none;
+            margin-top: 16px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+        }
+
+        .translation-output.show {
+            display: block;
+        }
+
+        .output-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .output-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .output-text {
+            font-size: 16px;
+            color: var(--text-primary);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                border-radius: 24px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .mode-tabs {
+                flex-wrap: wrap;
+            }
+
+            .mode-tab {
+                font-size: 12px;
+                padding: 8px 10px;
+            }
+
+            .text-area-container {
+                min-height: 360px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="icon-btn" id="backBtn" title="Back">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1>Translate</h1>
+            <button class="icon-btn" id="settingsBtn" title="Settings">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="content">
+            <div class="mode-tabs">
+                <button class="mode-tab" id="signTextBtn">
+                    <svg class="mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    </svg>
+                    <span>Sign Text</span>
+                </button>
+                <button class="mode-tab" id="signSpeechBtn">
+                    <svg class="mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    </svg>
+                    <span>Sign Speech</span>
+                </button>
+                <button class="mode-tab active" id="textSpeechBtn">
+                    <svg class="mode-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    </svg>
+                    <span>Text Speech</span>
+                </button>
+            </div>
+
+            <div class="language-selector">
+                <div class="lang-dropdown">
+                    <svg class="lang-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m5 8 6 6m-7 0 6-6 2-3M2 5h12M7 2h1m14 20-5-10-5 10m2-4h6"/>
+                    </svg>
+                    <select id="sourceLang">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ar">Arabic</option>
+                        <option value="hi">Hindi</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ru">Russian</option>
+                        <option value="nl">Dutch</option>
+                        <option value="pl">Polish</option>
+                        <option value="tr">Turkish</option>
+                    </select>
+                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <button class="swap-btn" id="swapBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+                    </svg>
+                </button>
+                <div class="lang-dropdown">
+                    <svg class="lang-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m5 8 6 6m-7 0 6-6 2-3M2 5h12M7 2h1m14 20-5-10-5 10m2-4h6"/>
+                    </svg>
+                    <select id="targetLang">
+                        <option value="es" selected>Spanish</option>
+                        <option value="en">English</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="ar">Arabic</option>
+                        <option value="hi">Hindi</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ru">Russian</option>
+                        <option value="nl">Dutch</option>
+                        <option value="pl">Polish</option>
+                        <option value="tr">Turkish</option>
+                    </select>
+                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="text-area-container">
+                <div class="text-area-header">
+                    <div class="text-area-label" id="sourceLabel">English (US)</div>
+                    <div class="header-actions">
+                        <button class="action-btn" id="sourceSpeaker" title="Listen">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="sourceText" placeholder="Tap the mic button to start"></textarea>
+                <div class="text-actions">
+                    <button class="action-btn" id="shareBtn" title="Share">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                    </button>
+                    <button class="action-btn" id="copyBtn" title="Copy">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="translation-output" id="translationOutput">
+                <div class="output-header">
+                    <div class="output-label" id="targetLabel">Spanish (ES)</div>
+                    <div class="header-actions">
+                        <button class="action-btn" id="targetSpeaker" title="Listen">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            </svg>
+                        </button>
+                        <button class="action-btn" id="copyTransBtn" title="Copy">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="output-text" id="targetText"></div>
+            </div>
+
+            <div class="mic-container">
+                <button class="mic-btn" id="micBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="status-text" id="statusText"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="messageModal">
+        <div class="modal-content">
+            <p id="modalMessage"></p>
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="modalOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        const languageNames = {
+            'en': 'English (US)', 'es': 'Spanish (ES)', 'fr': 'French (FR)', 'de': 'German (DE)',
+            'it': 'Italian (IT)', 'pt': 'Portuguese (BR)', 'ja': 'Japanese (JP)', 'ko': 'Korean (KR)',
+            'ar': 'Arabic (AR)', 'hi': 'Hindi (IN)', 'zh': 'Chinese (CN)', 'ru': 'Russian (RU)',
+            'nl': 'Dutch (NL)', 'pl': 'Polish (PL)', 'tr': 'Turkish (TR)'
+        };
+
+        const languageCodes = {
+            'en': 'en-US', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE',
+            'it': 'it-IT', 'pt': 'pt-BR', 'ja': 'ja-JP', 'ko': 'ko-KR',
+            'ar': 'ar-SA', 'hi': 'hi-IN', 'zh': 'zh-CN', 'ru': 'ru-RU',
+            'nl': 'nl-NL', 'pl': 'pl-PL', 'tr': 'tr-TR'
+        };
+
+        const sourceText = document.getElementById('sourceText');
+        const targetText = document.getElementById('targetText');
+        const sourceLang = document.getElementById('sourceLang');
+        const targetLang = document.getElementById('targetLang');
+        const swapBtn = document.getElementById('swapBtn');
+        const micBtn = document.getElementById('micBtn');
+        const sourceSpeaker = document.getElementById('sourceSpeaker');
+        const targetSpeaker = document.getElementById('targetSpeaker');
+        const statusText = document.getElementById('statusText');
+        const sourceLabel = document.getElementById('sourceLabel');
+        const targetLabel = document.getElementById('targetLabel');
+        const translationOutput = document.getElementById('translationOutput');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyTransBtn = document.getElementById('copyTransBtn');
+        const shareBtn = document.getElementById('shareBtn');
+
+        let recognition = null;
+        let isRecording = false;
+        let micPermissionGranted = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+        }
+
+        let currentUtterance = null;
+
+        function updateLabels() {
+            const sourceLangValue = sourceLang.value;
+            const targetLangValue = targetLang.value;
+            sourceLabel.textContent = languageNames[sourceLangValue];
+            targetLabel.textContent = languageNames[targetLangValue];
+        }
+
+        function showMessage(message) {
+            const modal = document.getElementById('messageModal');
+            const modalMessage = document.getElementById('modalMessage');
+            modalMessage.textContent = message;
+            modal.classList.add('show');
+        }
+
+        function startRecording() {
+            recognition.lang = languageCodes[sourceLang.value];
+            recognition.start();
+            isRecording = true;
+            micBtn.classList.add('recording');
+            statusText.textContent = 'Listening...';
+            statusText.classList.add('recording');
+            sourceText.value = '';
+            targetText.textContent = '';
+            translationOutput.classList.remove('show');
+        }
+
+        function stopRecording() {
+            recognition.stop();
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            statusText.classList.remove('recording');
+            statusText.textContent = '';
+        }
+
+        async function translateText() {
+            const text = sourceText.value.trim();
+            if (!text) {
+                translationOutput.classList.remove('show');
+                return;
+            }
+
+            statusText.textContent = 'Translating...';
+            statusText.classList.add('translating');
+            targetText.textContent = '';
+
+            const sourceLangCode = sourceLang.value;
+            const targetLangCode = targetLang.value;
+
+            try {
+                const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLangCode}|${targetLangCode}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.responseStatus === 200 && data.responseData) {
+                    targetText.textContent = data.responseData.translatedText;
+                    translationOutput.classList.add('show');
+                    statusText.textContent = '';
+                    statusText.classList.remove('translating');
+                } else {
+                    throw new Error('Translation failed');
+                }
+            } catch (err) {
+                statusText.textContent = 'Translation failed';
+                statusText.classList.remove('translating');
+                targetText.textContent = 'Error: Could not translate. Please try again.';
+                translationOutput.classList.add('show');
+                console.error('Translation error:', err);
+            }
+        }
+
+        function speakText(text, lang, button) {
+            window.speechSynthesis.cancel();
+
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = languageCodes[lang];
+            currentUtterance.rate = 0.9;
+
+            button.classList.add('playing');
+
+            currentUtterance.onend = () => {
+                button.classList.remove('playing');
+            };
+
+            currentUtterance.onerror = () => {
+                button.classList.remove('playing');
+            };
+
+            window.speechSynthesis.speak(currentUtterance);
+        }
+
+        // Mode tab switching
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        document.getElementById('modalOk').addEventListener('click', () => {
+            document.getElementById('messageModal').classList.remove('show');
+        });
+
+        swapBtn.addEventListener('click', () => {
+            const temp = sourceLang.value;
+            sourceLang.value = targetLang.value;
+            targetLang.value = temp;
+
+            const tempText = sourceText.value;
+            sourceText.value = targetText.textContent;
+            targetText.textContent = tempText;
+
+            updateLabels();
+
+            if (sourceText.value.trim()) {
+                translateText();
+            } else {
+                translationOutput.classList.remove('show');
+            }
+        });
+
+        sourceLang.addEventListener('change', () => {
+            updateLabels();
+            if (sourceText.value.trim()) {
+                translateText();
+            }
+        });
+
+        targetLang.addEventListener('change', () => {
+            updateLabels();
+            if (sourceText.value.trim()) {
+                translateText();
+            }
+        });
+
+        micBtn.addEventListener('click', async () => {
+            if (!recognition) {
+                showMessage('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari. You can still type in the text box above!');
+                return;
+            }
+
+            if (!micPermissionGranted) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop());
+                    micPermissionGranted = true;
+                } catch (err) {
+                    showMessage('Microphone access is required for voice input. Please allow microphone access in your browser settings, or use the text box to type your message instead.');
+                    console.error('Microphone permission denied:', err);
+                    return;
+                }
+            }
+
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        if (recognition) {
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                sourceText.value = (finalTranscript + interimTranscript).trim();
+                if (finalTranscript) {
+                    translateText();
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopRecording();
+                if (event.error === 'not-allowed') {
+                    showMessage('Microphone access denied. Please allow microphone access and try again.');
+                } else if (event.error === 'no-speech') {
+                    statusText.textContent = 'No speech detected';
+                } else {
+                    showMessage('Speech recognition error: ' + event.error);
+                }
+            };
+
+            recognition.onend = () => {
+                if (isRecording) {
+                    recognition.start();
+                }
+            };
+        }
+
+        let typingTimer;
+        sourceText.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                if (sourceText.value.trim()) {
+                    translateText();
+                } else {
+                    targetText.textContent = '';
+                    translationOutput.classList.remove('show');
+                }
+            }, 500);
+        });
+
+        sourceSpeaker.addEventListener('click', () => {
+            const text = sourceText.value.trim();
+            if (!text) return;
+
+            if (currentUtterance && sourceSpeaker.classList.contains('playing')) {
+                window.speechSynthesis.cancel();
+                sourceSpeaker.classList.remove('playing');
+                return;
+            }
+
+            speakText(text, sourceLang.value, sourceSpeaker);
+        });
+
+        targetSpeaker.addEventListener('click', () => {
+            const text = targetText.textContent.trim();
+            if (!text) return;
+
+            if (currentUtterance && targetSpeaker.classList.contains('playing')) {
+                window.speechSynthesis.cancel();
+                targetSpeaker.classList.remove('playing');
+                return;
+            }
+
+            speakText(text, targetLang.value, targetSpeaker);
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            const text = sourceText.value.trim();
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                }, 2000);
+            } catch (err) {
+                console.error('Copy failed:', err);
+            }
+        });
+
+        copyTransBtn.addEventListener('click', async () => {
+            const text = targetText.textContent.trim();
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalHTML = copyTransBtn.innerHTML;
+                copyTransBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                setTimeout(() => {
+                    copyTransBtn.innerHTML = originalHTML;
+                }, 2000);
+            } catch (err) {
+                console.error('Copy failed:', err);
+            }
+        });
+
+        shareBtn.addEventListener('click', async () => {
+            const text = sourceText.value.trim();
+            if (!text) return;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        text: text,
+                        title: 'Translation'
+                    });
+                } catch (err) {
+                    console.error('Share failed:', err);
+                }
+            } else {
+                showMessage('Sharing is not supported in your browser. Use the copy button instead.');
+            }
+        });
+
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            showMessage('Settings feature coming soon! You can adjust languages using the dropdowns above.');
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            showMessage('Back navigation not available in this view.');
+        });
+
+        document.getElementById('signTextBtn').addEventListener('click', () => {
+            showMessage('Sign Text mode coming soon!');
+        });
+
+        document.getElementById('signSpeechBtn').addEventListener('click', () => {
+            showMessage('Sign Speech mode coming soon!');
+        });
+
+        updateLabels();
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    stream.getTracks().forEach(track => track.stop());
+                    micPermissionGranted = true;
+                    console.log('Microphone access granted');
+                    statusText.textContent = 'Ready! Click the mic to start';
+                    statusText.style.color = '#4285f4';
+                    setTimeout(() => {
+                        statusText.textContent = '';
+                        statusText.style.color = '';
+                    }, 3000);
+                })
+                .catch(err => {
+                    console.log('Microphone access denied or not available:', err);
+                    statusText.textContent = 'Type text above or click mic to enable voice';
+                    setTimeout(() => {
+                        statusText.textContent = '';
+                    }, 5000);
+                });
+        } else {
+            statusText.textContent = 'Type text above to translate';
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
